@@ -10,11 +10,10 @@ for v = 0:255
     
     %% Calculo do tempo de alto do pwm
     high_time = H(v);
+    high_time = uint16(2^16 - high_time);
     
     % Separo em byte maior e byte menor para usar na tabela
-    bytes = typecast(high_time, 'uint8');
-    high_byte = bytes(2); % byte maior é o segundo elemento
-    low_byte = bytes(1); % byte menor é o primeiro elemento
+    [high_byte, low_byte] = splitBytes(high_time);
     
     %% Monta a tabela de bytes altos do tempo alto
     str = '';
@@ -38,12 +37,11 @@ for v = 0:255
     
     %% Calculo do tempo de baixo
     low_time = L(v);
+    low_time = uint16(2^16 - low_time);
     
     % Separo o valor do tempo de baixo do pwm em dois bytes para uso na
     % tabela
-    bytes = typecast(low_time, 'uint8');
-    high_byte = bytes(2); % byte maior é o segundo elemento
-    low_byte = bytes(1); % byte menor é o primeiro elemento
+    [high_byte, low_byte] = splitBytes(low_time);
     
     %% Monta a tabela de bytes altos do tempo baixo
     str = '';

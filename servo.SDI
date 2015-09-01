@@ -1,1 +1,245 @@
-,,,% Projeto de servo
+,,,; Projeto de controle de servomotor
+,,,; Programador: Francisco Edno
+,,,
+,,,;******************************************************************************
+,,,; Equates and definitions
+,,,;******************************************************************************
+000B,,,SERVO   equ   p2.0
+,,,
+,,,;******************************************************************************
+,,,; Interrupt vectors entry point
+,,,;******************************************************************************
+,,,            org     0000h   ;Reset ENTRY POINT
+0000,02 00 30,,            ljmp    _main
+,,,
+,,,            org     0003h   ;External 0 ENTRY POINT
+0003,02 00 40,,            ljmp    _ext0
+,,,
+,,,            org     000Bh   ;Timer 0 ENTRY POINT
+000B,02 00 41,,            ljmp    _tmr0
+,,,
+,,,            org     0013h   ;External 1 ENTRY POINT
+0013,02 00 55,,            ljmp    _ext1
+,,,
+,,,            org     001Bh   ;Timer 1 ENTRY POINT
+001B,02 00 56,,            ljmp    _tmr1
+,,,
+,,,            org     0023h   ;Serial Port ENTRY POINT
+0023,02 00 57,,            ljmp    _serial
+,,,
+,,,            org     002Bh   ;Timer 2 ENTRY POINT
+002B,02 00 58,,            ljmp    _tmr2
+,,,
+,,,;******************************************************************************
+,,,; Main
+,,,;******************************************************************************
+,,,            org     0030h       ; reset entry point
+0030,75 A8 82,_main,_main:      mov     ie, #82h    ; habilita a interrupcao do timer 0
+0033,75 89 01,,            mov     tmod, #01h  ; timer 0 no modo 1
+,,,
+0036,7F 07,,            mov     r7, #07
+,,,
+0038,D2 D5,,            setb    f0
+003A,11 59,,            acall   ReloadHT    ; recarrega o timer com tempo alto
+003C,D2 8C,,            setb    tr0         ; liga o timer 0
+,,,
+003E,01 3E,,            ajmp    $           ; espera as interrupcoes
+,,,
+,,,;******************************************************************************
+,,,; ISR - Interrupt Service Routines
+,,,;******************************************************************************
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Externa 0
+,,,;------------------------------------------------------------------------------
+0040,32,_ext0,_ext0:      reti
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Timer 0
+,,,;------------------------------------------------------------------------------
+0041,20 D5 08,_tmr0,_tmr0:      jb      f0, high_done
+,,,
+0044,D2 D5,low_done,low_done:   setb    f0
+0046,D2 A0,,            setb    SERVO
+0048,11 59,,            acall   ReloadHT
+,,,            ;mov     th0, #high -1502
+,,,            ;mov     tl0, #low -1502
+004A,01 52,,            ajmp    _exit
+,,,
+004C,C2 D5,high_done,high_done:  clr     f0
+004E,C2 A0,,            clr     SERVO
+0050,11 64,,            acall   ReloadLT
+,,,            ;mov     th0, #high -18498
+,,,            ;mov     tl0, #low -18498
+,,,
+0052,C2 8D,_exit,_exit:      clr     tf0
+0054,32,,            reti
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Externa 1
+,,,;------------------------------------------------------------------------------
+0055,32,_ext1,_ext1:      reti
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Timer 1
+,,,;------------------------------------------------------------------------------
+0056,32,_tmr1,_tmr1:      reti
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Serial Port
+,,,;------------------------------------------------------------------------------
+0057,32,_serial,_serial:    reti
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; Timer 2
+,,,;------------------------------------------------------------------------------
+0058,32,_tmr2,_tmr2:      reti
+,,,
+,,,;******************************************************************************
+,,,; SUB-ROTINAS
+,,,;******************************************************************************
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; ReloadHT
+,,,;------------------------------------------------------------------------------
+0059,EF,ReloadHT,ReloadHT:   mov     a, r7   ; carrega o valor do acumulador com o pwm desejado
+005A,11 6F,,            acall   LKHTHB
+005C,F5 8C,,            mov     th0, a
+,,,
+005E,EF,,            mov     a, r7
+005F,31 74,,            acall   LKHTLB
+0061,F5 8A,,            mov     tl0, a
+,,,
+0063,22,,            ret
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; ReloadLT
+,,,;------------------------------------------------------------------------------
+0064,EF,ReloadLT,ReloadLT:   mov     a, r7
+0065,51 79,,            acall   LKLTHB
+0067,F5 8C,,            mov     th0, a
+,,,
+0069,EF,,            mov     a, r7
+006A,71 7E,,            acall   LKLTLB
+006C,F5 8A,,            mov     tl0, a
+,,,
+006E,22,,            ret
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; LKHTHB
+,,,;------------------------------------------------------------------------------
+006F,90 00 74,LKHTHB,LKHTHB:     mov     dptr, #TH_HIGH
+0072,93,,            movc    a, @a+dptr
+,,,
+0073,22,,            ret
+,,,
+0074,FC FC FC FC,TH_HIGH,TH_HIGH:    db  0FCh,0FCh,0FCh,0FCh,0FCh,0FCh,0FCh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+0081,FB FB FB FB,,            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+008E,FB FB FB FB,,            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+009B,FB FB FB FB,,            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+00A8,FB FB FB FB,,            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+00B5,FB FB FB FB,,            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+00C2,FA FA FA FA,,            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+00CF,FA FA FA FA,,            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+00DC,FA FA FA FA,,            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+00E9,FA FA FA FA,,            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+00F6,FA FA FA FA,,            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+0103,F9 F9 F9 F9,,            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+0110,F9 F9 F9 F9,,            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+011D,F9 F9 F9 F9,,            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+012A,F9 F9 F9 F9,,            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+0137,F9 F9 F9 F9,,            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F8h,0F8h,0F8h,0F8h,0F8h
+0144,F8 F8 F8 F8,,            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+0151,F8 F8 F8 F8,,            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+015E,F8 F8 F8 F8,,            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+016B,F8 F8 F8 F8,,            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; LKHTLB
+,,,;------------------------------------------------------------------------------
+0174,90 01 79,LKHTLB,LKHTLB:     mov     dptr, #TH_LOW
+0177,93,,            movc    a, @a+dptr
+,,,
+0178,22,,            ret
+,,,
+0179,18 14 10 0C,TH_LOW,TH_LOW:     db  018h,014h,010h,00Ch,008h,004h,000h,0FDh,0F9h,0F5h,0F1h,0EDh,0E9h
+0186,E5 E1 DD D9,,            db  0E5h,0E1h,0DDh,0D9h,0D5h,0D1h,0CDh,0CAh,0C6h,0C2h,0BEh,0BAh,0B6h
+0193,B2 AE AA A6,,            db  0B2h,0AEh,0AAh,0A6h,0A2h,09Eh,09Bh,097h,093h,08Fh,08Bh,087h,083h
+01A0,7F 7B 77 73,,            db  07Fh,07Bh,077h,073h,06Fh,06Bh,068h,064h,060h,05Ch,058h,054h,050h
+01AD,4C 48 44 40,,            db  04Ch,048h,044h,040h,03Ch,038h,035h,031h,02Dh,029h,025h,021h,01Dh
+01BA,19 15 11 0D,,            db  019h,015h,011h,00Dh,009h,005h,002h,0FEh,0FAh,0F6h,0F2h,0EEh,0EAh
+01C7,E6 E2 DE DA,,            db  0E6h,0E2h,0DEh,0DAh,0D6h,0D3h,0CFh,0CBh,0C7h,0C3h,0BFh,0BBh,0B7h
+01D4,B3 AF AB A7,,            db  0B3h,0AFh,0ABh,0A7h,0A3h,0A0h,09Ch,098h,094h,090h,08Ch,088h,084h
+01E1,80 7C 78 74,,            db  080h,07Ch,078h,074h,070h,06Dh,069h,065h,061h,05Dh,059h,055h,051h
+01EE,4D 49 45 41,,            db  04Dh,049h,045h,041h,03Dh,03Ah,036h,032h,02Eh,02Ah,026h,022h,01Eh
+01FB,1A 16 12 0E,,            db  01Ah,016h,012h,00Eh,00Bh,007h,003h,0FFh,0FBh,0F7h,0F3h,0EFh,0EBh
+0208,E7 E3 DF DB,,            db  0E7h,0E3h,0DFh,0DBh,0D8h,0D4h,0D0h,0CCh,0C8h,0C4h,0C0h,0BCh,0B8h
+0215,B4 B0 AC A8,,            db  0B4h,0B0h,0ACh,0A8h,0A5h,0A1h,09Dh,099h,095h,091h,08Dh,089h,085h
+0222,81 7D 79 75,,            db  081h,07Dh,079h,075h,072h,06Eh,06Ah,066h,062h,05Eh,05Ah,056h,052h
+022F,4E 4A 46 43,,            db  04Eh,04Ah,046h,043h,03Fh,03Bh,037h,033h,02Fh,02Bh,027h,023h,01Fh
+023C,1B 17 13 10,,            db  01Bh,017h,013h,010h,00Ch,008h,004h,000h,0FCh,0F8h,0F4h,0F0h,0ECh
+0249,E8 E4 E0 DD,,            db  0E8h,0E4h,0E0h,0DDh,0D9h,0D5h,0D1h,0CDh,0C9h,0C5h,0C1h,0BDh,0B9h
+0256,B5 B1 AD AA,,            db  0B5h,0B1h,0ADh,0AAh,0A6h,0A2h,09Eh,09Ah,096h,092h,08Eh,08Ah,086h
+0263,82 7E 7B 77,,            db  082h,07Eh,07Bh,077h,073h,06Fh,06Bh,067h,063h,05Fh,05Bh,057h,053h
+0270,4F 4B 48 44,,            db  04Fh,04Bh,048h,044h,040h,03Ch,038h,034h,030h
+,,,
+,,,;------------------------------------------------------------------------------
+,,,; LKLTHB
+,,,;------------------------------------------------------------------------------
+0279,90 02 7E,LKLTHB,LKLTHB:     mov     dptr, #TL_HIGH
+027C,93,,            movc    a, @a+dptr
+,,,
+027D,22,,            ret
+,,,
+027E,B5 B5 B5 B5,TL_HIGH,TL_HIGH:    db  0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h
+028B,B5 B5 B6 B6,,            db  0B5h,0B5h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+0298,B6 B6 B6 B6,,            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+02A5,B6 B6 B6 B6,,            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+02B2,B6 B6 B6 B6,,            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+02BF,B6 B6 B6 B6,,            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+02CC,B6 B6 B7 B7,,            db  0B6h,0B6h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+02D9,B7 B7 B7 B7,,            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+02E6,B7 B7 B7 B7,,            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+02F3,B7 B7 B7 B7,,            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+0300,B7 B7 B7 B7,,            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+030D,B7 B7 B8 B8,,            db  0B7h,0B7h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+031A,B8 B8 B8 B8,,            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+0327,B8 B8 B8 B8,,            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+0334,B8 B8 B8 B8,,            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+0341,B8 B8 B8 B8,,            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+034E,B8 B8 B9 B9,,            db  0B8h,0B8h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+035B,B9 B9 B9 B9,,            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+0368,B9 B9 B9 B9,,            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+0375,B9 B9 B9 B9,,            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+,,,;------------------------------------------------------------------------------
+,,,; LKLTLB
+,,,;------------------------------------------------------------------------------
+037E,90 03 83,LKLTLB,LKLTLB:     mov     dptr, #TL_LOW
+0381,93,,            movc    a, @a+dptr
+,,,
+0382,22,,            ret
+,,,
+0383,C8 CC D0 D4,TL_LOW,TL_LOW:     db  0C8h,0CCh,0D0h,0D4h,0D8h,0DCh,0E0h,0E3h,0E7h,0EBh,0EFh,0F3h,0F7h
+0390,FB FF 03 07,,            db  0FBh,0FFh,003h,007h,00Bh,00Fh,013h,016h,01Ah,01Eh,022h,026h,02Ah
+039D,2E 32 36 3A,,            db  02Eh,032h,036h,03Ah,03Eh,042h,045h,049h,04Dh,051h,055h,059h,05Dh
+03AA,61 65 69 6D,,            db  061h,065h,069h,06Dh,071h,075h,078h,07Ch,080h,084h,088h,08Ch,090h
+03B7,94 98 9C A0,,            db  094h,098h,09Ch,0A0h,0A4h,0A8h,0ABh,0AFh,0B3h,0B7h,0BBh,0BFh,0C3h
+03C4,C7 CB CF D3,,            db  0C7h,0CBh,0CFh,0D3h,0D7h,0DBh,0DEh,0E2h,0E6h,0EAh,0EEh,0F2h,0F6h
+03D1,FA FE 02 06,,            db  0FAh,0FEh,002h,006h,00Ah,00Dh,011h,015h,019h,01Dh,021h,025h,029h
+03DE,2D 31 35 39,,            db  02Dh,031h,035h,039h,03Dh,040h,044h,048h,04Ch,050h,054h,058h,05Ch
+03EB,60 64 68 6C,,            db  060h,064h,068h,06Ch,070h,073h,077h,07Bh,07Fh,083h,087h,08Bh,08Fh
+03F8,93 97 9B 9F,,            db  093h,097h,09Bh,09Fh,0A3h,0A6h,0AAh,0AEh,0B2h,0B6h,0BAh,0BEh,0C2h
+0405,C6 CA CE D2,,            db  0C6h,0CAh,0CEh,0D2h,0D5h,0D9h,0DDh,0E1h,0E5h,0E9h,0EDh,0F1h,0F5h
+0412,F9 FD 01 05,,            db  0F9h,0FDh,001h,005h,008h,00Ch,010h,014h,018h,01Ch,020h,024h,028h
+041F,2C 30 34 38,,            db  02Ch,030h,034h,038h,03Bh,03Fh,043h,047h,04Bh,04Fh,053h,057h,05Bh
+042C,5F 63 67 6B,,            db  05Fh,063h,067h,06Bh,06Eh,072h,076h,07Ah,07Eh,082h,086h,08Ah,08Eh
+0439,92 96 9A 9D,,            db  092h,096h,09Ah,09Dh,0A1h,0A5h,0A9h,0ADh,0B1h,0B5h,0B9h,0BDh,0C1h
+0446,C5 C9 CD D0,,            db  0C5h,0C9h,0CDh,0D0h,0D4h,0D8h,0DCh,0E0h,0E4h,0E8h,0ECh,0F0h,0F4h
+0453,F8 FC 00 03,,            db  0F8h,0FCh,000h,003h,007h,00Bh,00Fh,013h,017h,01Bh,01Fh,023h,027h
+0460,2B 2F 33 36,,            db  02Bh,02Fh,033h,036h,03Ah,03Eh,042h,046h,04Ah,04Eh,052h,056h,05Ah
+046D,5E 62 65 69,,            db  05Eh,062h,065h,069h,06Dh,071h,075h,079h,07Dh,081h,085h,089h,08Dh
+047A,91 95 98 9C,,            db  091h,095h,098h,09Ch,0A0h,0A4h,0A8h,0ACh,0B0h
+,,,
+,,,;******************************************************************************
+000E,,,            end
+,,,;******************************************************************************

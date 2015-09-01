@@ -24,43 +24,43 @@ ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. 
     4:				;******************************************************************************
     5:				; Equates and definitions
     6:				;******************************************************************************
-    7:
-    8:				;******************************************************************************
-    9:				; Interrupt vectors entry point
-   10:				;******************************************************************************
-   11:		N      0000	            org     0000h   ;Reset ENTRY POINT
-   12:	  0000	02 00 30	            ljmp    _main
-   13:
-   14:		N      0003	            org     0003h   ;External 0 ENTRY POINT
-   15:	  0003	02 00 30	            ljmp    _ext0
-   16:
-   17:		N      000B	            org     000Bh   ;Timer 0 ENTRY POINT
-   18:	  000B	02 00 31	            ljmp    _tmr0
-   19:
-   20:		N      0013	            org     0013h   ;External 1 ENTRY POINT
-   21:	  0013	02 00 32	            ljmp    _ext1
-   22:
-   23:		N      001B	            org     001Bh   ;Timer 1 ENTRY POINT
-   24:	  001B	02 00 33	            ljmp    _tmr1
-   25:
-   26:		N      0023	            org     0023h   ;Serial Port ENTRY POINT
-   27:	  0023	02 00 34	            ljmp    _serial
-   28:
-   29:		N      002B	            org     002Bh   ;Timer 2 ENTRY POINT
-   30:	  002B	02 00 35	            ljmp    _tmr2
-   31:
-   32:				;******************************************************************************
-   33:				; Main
-   34:				;******************************************************************************
-   35:		N      0030	            org     0030h   ; reset entry point
-   36:	  0030			_main:
-   37:
-   38:				;******************************************************************************
-   39:				; ISR - Interrupt Service Routines
-   40:				;******************************************************************************
+    7:		B      00A0	SERVO   equ   p2.0
+    8:
+    9:				;******************************************************************************
+   10:				; Interrupt vectors entry point
+   11:				;******************************************************************************
+   12:		N      0000	            org     0000h   ;Reset ENTRY POINT
+   13:	  0000	02 00 30	            ljmp    _main
+   14:
+   15:		N      0003	            org     0003h   ;External 0 ENTRY POINT
+   16:	  0003	02 00 40	            ljmp    _ext0
+   17:
+   18:		N      000B	            org     000Bh   ;Timer 0 ENTRY POINT
+   19:	  000B	02 00 41	            ljmp    _tmr0
+   20:
+   21:		N      0013	            org     0013h   ;External 1 ENTRY POINT
+   22:	  0013	02 00 55	            ljmp    _ext1
+   23:
+   24:		N      001B	            org     001Bh   ;Timer 1 ENTRY POINT
+   25:	  001B	02 00 56	            ljmp    _tmr1
+   26:
+   27:		N      0023	            org     0023h   ;Serial Port ENTRY POINT
+   28:	  0023	02 00 57	            ljmp    _serial
+   29:
+   30:		N      002B	            org     002Bh   ;Timer 2 ENTRY POINT
+   31:	  002B	02 00 58	            ljmp    _tmr2
+   32:
+   33:				;******************************************************************************
+   34:				; Main
+   35:				;******************************************************************************
+   36:		N      0030	            org     0030h       ; reset entry point
+   37:	  0030	75 A8 82	_main:      mov     ie, #82h    ; habilita a interrupcao do timer 0
+   38:	  0033	75 89 01	            mov     tmod, #01h  ; timer 0 no modo 1
+   39:
+   40:	  0036	7F 07		            mov     r7, #07
    41:
-   42:				;------------------------------------------------------------------------------
-   43:				; Externa 0
+   42:	  0038	D2 D5		            setb    f0
+   43:	  003A	11 59		            acall   ReloadHT    ; recarrega o timer com tempo alto
 
 ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 2
 
@@ -68,41 +68,493 @@ ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. 
 
  Line  I  Addr  Code            Source
 
-   44:				;------------------------------------------------------------------------------
-   45:	  0030	32		_ext0:      reti
-   46:
-   47:				;------------------------------------------------------------------------------
-   48:				; Timer 0
-   49:				;------------------------------------------------------------------------------
-   50:	  0031	32		_tmr0:      reti
+   44:	  003C	D2 8C		            setb    tr0         ; liga o timer 0
+   45:
+   46:	  003E	01 3E		            ajmp    $           ; espera as interrupcoes
+   47:
+   48:				;******************************************************************************
+   49:				; ISR - Interrupt Service Routines
+   50:				;******************************************************************************
    51:
    52:				;------------------------------------------------------------------------------
-   53:				; Externa 1
+   53:				; Externa 0
    54:				;------------------------------------------------------------------------------
-   55:	  0032	32		_ext1:      reti
+   55:	  0040	32		_ext0:      reti
    56:
    57:				;------------------------------------------------------------------------------
-   58:				; Timer 1
+   58:				; Timer 0
    59:				;------------------------------------------------------------------------------
-   60:	  0033	32		_tmr1:      reti
+   60:	  0041	20 D5 08	_tmr0:      jb      f0, high_done
    61:
-   62:				;------------------------------------------------------------------------------
-   63:				; Serial Port
-   64:				;------------------------------------------------------------------------------
-   65:	  0034	32		_serial:    reti
-   66:
-   67:				;------------------------------------------------------------------------------
-   68:				; Timer 2
-   69:				;------------------------------------------------------------------------------
-   70:	  0035	32		_tmr2:      reti
-   71:
-   72:				;******************************************************************************
-   73:				; SUB-ROTINAS
-   74:				;******************************************************************************
-   75:
-   76:				;******************************************************************************
-   77:				            end
-   78:				;******************************************************************************
+   62:	  0044	D2 D5		low_done:   setb    f0
+   63:	  0046	D2 A0		            setb    SERVO
+   64:	  0048	11 59		            acall   ReloadHT
+   65:				            ;mov     th0, #high -1502
+   66:				            ;mov     tl0, #low -1502
+   67:	  004A	01 52		            ajmp    _exit
+   68:
+   69:	  004C	C2 D5		high_done:  clr     f0
+   70:	  004E	C2 A0		            clr     SERVO
+   71:	  0050	11 64		            acall   ReloadLT
+   72:				            ;mov     th0, #high -18498
+   73:				            ;mov     tl0, #low -18498
+   74:
+   75:	  0052	C2 8D		_exit:      clr     tf0
+   76:	  0054	32		            reti
+   77:
+   78:				;------------------------------------------------------------------------------
+   79:				; Externa 1
+   80:				;------------------------------------------------------------------------------
+   81:	  0055	32		_ext1:      reti
+   82:
+   83:				;------------------------------------------------------------------------------
+   84:				; Timer 1
+   85:				;------------------------------------------------------------------------------
+   86:	  0056	32		_tmr1:      reti
+   87:
+   88:				;------------------------------------------------------------------------------
+   89:				; Serial Port
+   90:				;------------------------------------------------------------------------------
+   91:	  0057	32		_serial:    reti
+   92:
+   93:				;------------------------------------------------------------------------------
+   94:				; Timer 2
+   95:				;------------------------------------------------------------------------------
+   96:	  0058	32		_tmr2:      reti
+   97:
+   98:				;******************************************************************************
+   99:				; SUB-ROTINAS
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 3
+
+
+
+ Line  I  Addr  Code            Source
+
+  100:				;******************************************************************************
+  101:
+  102:				;------------------------------------------------------------------------------
+  103:				; ReloadHT
+  104:				;------------------------------------------------------------------------------
+  105:	  0059	EF		ReloadHT:   mov     a, r7   ; carrega o valor do acumulador com o pwm desejado
+  106:	  005A	11 6F		            acall   LKHTHB
+  107:	  005C	F5 8C		            mov     th0, a
+  108:
+  109:	  005E	EF		            mov     a, r7
+  110:	  005F	31 74		            acall   LKHTLB
+  111:	  0061	F5 8A		            mov     tl0, a
+  112:
+  113:	  0063	22		            ret
+  114:
+  115:				;------------------------------------------------------------------------------
+  116:				; ReloadLT
+  117:				;------------------------------------------------------------------------------
+  118:	  0064	EF		ReloadLT:   mov     a, r7
+  119:	  0065	51 79		            acall   LKLTHB
+  120:	  0067	F5 8C		            mov     th0, a
+  121:
+  122:	  0069	EF		            mov     a, r7
+  123:	  006A	71 7E		            acall   LKLTLB
+  124:	  006C	F5 8A		            mov     tl0, a
+  125:
+  126:	  006E	22		            ret
+  127:
+  128:				;------------------------------------------------------------------------------
+  129:				; LKHTHB
+  130:				;------------------------------------------------------------------------------
+  131:	  006F	90 00 74	LKHTHB:     mov     dptr, #TH_HIGH
+  132:	  0072	93		            movc    a, @a+dptr
+  133:
+  134:	  0073	22		            ret
+  135:
+  136:	  0074	FC FC FC FC	TH_HIGH:    db  0FCh,0FCh,0FCh,0FCh,0FCh,0FCh,0FCh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+	  0078	FC FC FC FB
+	  007C	FB FB FB FB
+	  0080	FB
+  137:	  0081	FB FB FB FB	            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+	  0085	FB FB FB FB
+	  0089	FB FB FB FB
+	  008D	FB
+  138:	  008E	FB FB FB FB	            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+	  0092	FB FB FB FB
+	  0096	FB FB FB FB
+	  009A	FB
+  139:	  009B	FB FB FB FB	            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+	  009F	FB FB FB FB
+	  00A3	FB FB FB FB
+	  00A7	FB
+  140:	  00A8	FB FB FB FB	            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh
+	  00AC	FB FB FB FB
+	  00B0	FB FB FB FB
+	  00B4	FB
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 4
+
+
+
+ Line  I  Addr  Code            Source
+
+  141:	  00B5	FB FB FB FB	            db  0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FBh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+	  00B9	FB FB FB FA
+	  00BD	FA FA FA FA
+	  00C1	FA
+  142:	  00C2	FA FA FA FA	            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+	  00C6	FA FA FA FA
+	  00CA	FA FA FA FA
+	  00CE	FA
+  143:	  00CF	FA FA FA FA	            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+	  00D3	FA FA FA FA
+	  00D7	FA FA FA FA
+	  00DB	FA
+  144:	  00DC	FA FA FA FA	            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+	  00E0	FA FA FA FA
+	  00E4	FA FA FA FA
+	  00E8	FA
+  145:	  00E9	FA FA FA FA	            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh
+	  00ED	FA FA FA FA
+	  00F1	FA FA FA FA
+	  00F5	FA
+  146:	  00F6	FA FA FA FA	            db  0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0FAh,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+	  00FA	FA FA FA F9
+	  00FE	F9 F9 F9 F9
+	  0102	F9
+  147:	  0103	F9 F9 F9 F9	            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+	  0107	F9 F9 F9 F9
+	  010B	F9 F9 F9 F9
+	  010F	F9
+  148:	  0110	F9 F9 F9 F9	            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+	  0114	F9 F9 F9 F9
+	  0118	F9 F9 F9 F9
+	  011C	F9
+  149:	  011D	F9 F9 F9 F9	            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+	  0121	F9 F9 F9 F9
+	  0125	F9 F9 F9 F9
+	  0129	F9
+  150:	  012A	F9 F9 F9 F9	            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h
+	  012E	F9 F9 F9 F9
+	  0132	F9 F9 F9 F9
+	  0136	F9
+  151:	  0137	F9 F9 F9 F9	            db  0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F9h,0F8h,0F8h,0F8h,0F8h,0F8h
+	  013B	F9 F9 F9 F9
+	  013F	F8 F8 F8 F8
+	  0143	F8
+  152:	  0144	F8 F8 F8 F8	            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+	  0148	F8 F8 F8 F8
+	  014C	F8 F8 F8 F8
+	  0150	F8
+  153:	  0151	F8 F8 F8 F8	            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+	  0155	F8 F8 F8 F8
+	  0159	F8 F8 F8 F8
+	  015D	F8
+  154:	  015E	F8 F8 F8 F8	            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+	  0162	F8 F8 F8 F8
+	  0166	F8 F8 F8 F8
+	  016A	F8
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 5
+
+
+
+ Line  I  Addr  Code            Source
+
+  155:	  016B	F8 F8 F8 F8	            db  0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
+	  016F	F8 F8 F8 F8
+	  0173	F8
+  156:
+  157:				;------------------------------------------------------------------------------
+  158:				; LKHTLB
+  159:				;------------------------------------------------------------------------------
+  160:	  0174	90 01 79	LKHTLB:     mov     dptr, #TH_LOW
+  161:	  0177	93		            movc    a, @a+dptr
+  162:
+  163:	  0178	22		            ret
+  164:
+  165:	  0179	18 14 10 0C	TH_LOW:     db  018h,014h,010h,00Ch,008h,004h,000h,0FDh,0F9h,0F5h,0F1h,0EDh,0E9h
+	  017D	08 04 00 FD
+	  0181	F9 F5 F1 ED
+	  0185	E9
+  166:	  0186	E5 E1 DD D9	            db  0E5h,0E1h,0DDh,0D9h,0D5h,0D1h,0CDh,0CAh,0C6h,0C2h,0BEh,0BAh,0B6h
+	  018A	D5 D1 CD CA
+	  018E	C6 C2 BE BA
+	  0192	B6
+  167:	  0193	B2 AE AA A6	            db  0B2h,0AEh,0AAh,0A6h,0A2h,09Eh,09Bh,097h,093h,08Fh,08Bh,087h,083h
+	  0197	A2 9E 9B 97
+	  019B	93 8F 8B 87
+	  019F	83
+  168:	  01A0	7F 7B 77 73	            db  07Fh,07Bh,077h,073h,06Fh,06Bh,068h,064h,060h,05Ch,058h,054h,050h
+	  01A4	6F 6B 68 64
+	  01A8	60 5C 58 54
+	  01AC	50
+  169:	  01AD	4C 48 44 40	            db  04Ch,048h,044h,040h,03Ch,038h,035h,031h,02Dh,029h,025h,021h,01Dh
+	  01B1	3C 38 35 31
+	  01B5	2D 29 25 21
+	  01B9	1D
+  170:	  01BA	19 15 11 0D	            db  019h,015h,011h,00Dh,009h,005h,002h,0FEh,0FAh,0F6h,0F2h,0EEh,0EAh
+	  01BE	09 05 02 FE
+	  01C2	FA F6 F2 EE
+	  01C6	EA
+  171:	  01C7	E6 E2 DE DA	            db  0E6h,0E2h,0DEh,0DAh,0D6h,0D3h,0CFh,0CBh,0C7h,0C3h,0BFh,0BBh,0B7h
+	  01CB	D6 D3 CF CB
+	  01CF	C7 C3 BF BB
+	  01D3	B7
+  172:	  01D4	B3 AF AB A7	            db  0B3h,0AFh,0ABh,0A7h,0A3h,0A0h,09Ch,098h,094h,090h,08Ch,088h,084h
+	  01D8	A3 A0 9C 98
+	  01DC	94 90 8C 88
+	  01E0	84
+  173:	  01E1	80 7C 78 74	            db  080h,07Ch,078h,074h,070h,06Dh,069h,065h,061h,05Dh,059h,055h,051h
+	  01E5	70 6D 69 65
+	  01E9	61 5D 59 55
+	  01ED	51
+  174:	  01EE	4D 49 45 41	            db  04Dh,049h,045h,041h,03Dh,03Ah,036h,032h,02Eh,02Ah,026h,022h,01Eh
+	  01F2	3D 3A 36 32
+	  01F6	2E 2A 26 22
+	  01FA	1E
+  175:	  01FB	1A 16 12 0E	            db  01Ah,016h,012h,00Eh,00Bh,007h,003h,0FFh,0FBh,0F7h,0F3h,0EFh,0EBh
+	  01FF	0B 07 03 FF
+	  0203	FB F7 F3 EF
+	  0207	EB
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 6
+
+
+
+ Line  I  Addr  Code            Source
+
+  176:	  0208	E7 E3 DF DB	            db  0E7h,0E3h,0DFh,0DBh,0D8h,0D4h,0D0h,0CCh,0C8h,0C4h,0C0h,0BCh,0B8h
+	  020C	D8 D4 D0 CC
+	  0210	C8 C4 C0 BC
+	  0214	B8
+  177:	  0215	B4 B0 AC A8	            db  0B4h,0B0h,0ACh,0A8h,0A5h,0A1h,09Dh,099h,095h,091h,08Dh,089h,085h
+	  0219	A5 A1 9D 99
+	  021D	95 91 8D 89
+	  0221	85
+  178:	  0222	81 7D 79 75	            db  081h,07Dh,079h,075h,072h,06Eh,06Ah,066h,062h,05Eh,05Ah,056h,052h
+	  0226	72 6E 6A 66
+	  022A	62 5E 5A 56
+	  022E	52
+  179:	  022F	4E 4A 46 43	            db  04Eh,04Ah,046h,043h,03Fh,03Bh,037h,033h,02Fh,02Bh,027h,023h,01Fh
+	  0233	3F 3B 37 33
+	  0237	2F 2B 27 23
+	  023B	1F
+  180:	  023C	1B 17 13 10	            db  01Bh,017h,013h,010h,00Ch,008h,004h,000h,0FCh,0F8h,0F4h,0F0h,0ECh
+	  0240	0C 08 04 00
+	  0244	FC F8 F4 F0
+	  0248	EC
+  181:	  0249	E8 E4 E0 DD	            db  0E8h,0E4h,0E0h,0DDh,0D9h,0D5h,0D1h,0CDh,0C9h,0C5h,0C1h,0BDh,0B9h
+	  024D	D9 D5 D1 CD
+	  0251	C9 C5 C1 BD
+	  0255	B9
+  182:	  0256	B5 B1 AD AA	            db  0B5h,0B1h,0ADh,0AAh,0A6h,0A2h,09Eh,09Ah,096h,092h,08Eh,08Ah,086h
+	  025A	A6 A2 9E 9A
+	  025E	96 92 8E 8A
+	  0262	86
+  183:	  0263	82 7E 7B 77	            db  082h,07Eh,07Bh,077h,073h,06Fh,06Bh,067h,063h,05Fh,05Bh,057h,053h
+	  0267	73 6F 6B 67
+	  026B	63 5F 5B 57
+	  026F	53
+  184:	  0270	4F 4B 48 44	            db  04Fh,04Bh,048h,044h,040h,03Ch,038h,034h,030h
+	  0274	40 3C 38 34
+	  0278	30
+  185:
+  186:				;------------------------------------------------------------------------------
+  187:				; LKLTHB
+  188:				;------------------------------------------------------------------------------
+  189:	  0279	90 02 7E	LKLTHB:     mov     dptr, #TL_HIGH
+  190:	  027C	93		            movc    a, @a+dptr
+  191:
+  192:	  027D	22		            ret
+  193:
+  194:	  027E	B5 B5 B5 B5	TL_HIGH:    db  0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h,0B5h
+	  0282	B5 B5 B5 B5
+	  0286	B5 B5 B5 B5
+	  028A	B5
+  195:	  028B	B5 B5 B6 B6	            db  0B5h,0B5h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+	  028F	B6 B6 B6 B6
+	  0293	B6 B6 B6 B6
+	  0297	B6
+  196:	  0298	B6 B6 B6 B6	            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+	  029C	B6 B6 B6 B6
+	  02A0	B6 B6 B6 B6
+	  02A4	B6
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 7
+
+
+
+ Line  I  Addr  Code            Source
+
+  197:	  02A5	B6 B6 B6 B6	            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+	  02A9	B6 B6 B6 B6
+	  02AD	B6 B6 B6 B6
+	  02B1	B6
+  198:	  02B2	B6 B6 B6 B6	            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+	  02B6	B6 B6 B6 B6
+	  02BA	B6 B6 B6 B6
+	  02BE	B6
+  199:	  02BF	B6 B6 B6 B6	            db  0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h,0B6h
+	  02C3	B6 B6 B6 B6
+	  02C7	B6 B6 B6 B6
+	  02CB	B6
+  200:	  02CC	B6 B6 B7 B7	            db  0B6h,0B6h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+	  02D0	B7 B7 B7 B7
+	  02D4	B7 B7 B7 B7
+	  02D8	B7
+  201:	  02D9	B7 B7 B7 B7	            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+	  02DD	B7 B7 B7 B7
+	  02E1	B7 B7 B7 B7
+	  02E5	B7
+  202:	  02E6	B7 B7 B7 B7	            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+	  02EA	B7 B7 B7 B7
+	  02EE	B7 B7 B7 B7
+	  02F2	B7
+  203:	  02F3	B7 B7 B7 B7	            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+	  02F7	B7 B7 B7 B7
+	  02FB	B7 B7 B7 B7
+	  02FF	B7
+  204:	  0300	B7 B7 B7 B7	            db  0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h,0B7h
+	  0304	B7 B7 B7 B7
+	  0308	B7 B7 B7 B7
+	  030C	B7
+  205:	  030D	B7 B7 B8 B8	            db  0B7h,0B7h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+	  0311	B8 B8 B8 B8
+	  0315	B8 B8 B8 B8
+	  0319	B8
+  206:	  031A	B8 B8 B8 B8	            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+	  031E	B8 B8 B8 B8
+	  0322	B8 B8 B8 B8
+	  0326	B8
+  207:	  0327	B8 B8 B8 B8	            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+	  032B	B8 B8 B8 B8
+	  032F	B8 B8 B8 B8
+	  0333	B8
+  208:	  0334	B8 B8 B8 B8	            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+	  0338	B8 B8 B8 B8
+	  033C	B8 B8 B8 B8
+	  0340	B8
+  209:	  0341	B8 B8 B8 B8	            db  0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h,0B8h
+	  0345	B8 B8 B8 B8
+	  0349	B8 B8 B8 B8
+	  034D	B8
+  210:	  034E	B8 B8 B9 B9	            db  0B8h,0B8h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+	  0352	B9 B9 B9 B9
+	  0356	B9 B9 B9 B9
+	  035A	B9
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 8
+
+
+
+ Line  I  Addr  Code            Source
+
+  211:	  035B	B9 B9 B9 B9	            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+	  035F	B9 B9 B9 B9
+	  0363	B9 B9 B9 B9
+	  0367	B9
+  212:	  0368	B9 B9 B9 B9	            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+	  036C	B9 B9 B9 B9
+	  0370	B9 B9 B9 B9
+	  0374	B9
+  213:	  0375	B9 B9 B9 B9	            db  0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h,0B9h
+	  0379	B9 B9 B9 B9
+	  037D	B9
+  214:				;------------------------------------------------------------------------------
+  215:				; LKLTLB
+  216:				;------------------------------------------------------------------------------
+  217:	  037E	90 03 83	LKLTLB:     mov     dptr, #TL_LOW
+  218:	  0381	93		            movc    a, @a+dptr
+  219:
+  220:	  0382	22		            ret
+  221:
+  222:	  0383	C8 CC D0 D4	TL_LOW:     db  0C8h,0CCh,0D0h,0D4h,0D8h,0DCh,0E0h,0E3h,0E7h,0EBh,0EFh,0F3h,0F7h
+	  0387	D8 DC E0 E3
+	  038B	E7 EB EF F3
+	  038F	F7
+  223:	  0390	FB FF 03 07	            db  0FBh,0FFh,003h,007h,00Bh,00Fh,013h,016h,01Ah,01Eh,022h,026h,02Ah
+	  0394	0B 0F 13 16
+	  0398	1A 1E 22 26
+	  039C	2A
+  224:	  039D	2E 32 36 3A	            db  02Eh,032h,036h,03Ah,03Eh,042h,045h,049h,04Dh,051h,055h,059h,05Dh
+	  03A1	3E 42 45 49
+	  03A5	4D 51 55 59
+	  03A9	5D
+  225:	  03AA	61 65 69 6D	            db  061h,065h,069h,06Dh,071h,075h,078h,07Ch,080h,084h,088h,08Ch,090h
+	  03AE	71 75 78 7C
+	  03B2	80 84 88 8C
+	  03B6	90
+  226:	  03B7	94 98 9C A0	            db  094h,098h,09Ch,0A0h,0A4h,0A8h,0ABh,0AFh,0B3h,0B7h,0BBh,0BFh,0C3h
+	  03BB	A4 A8 AB AF
+	  03BF	B3 B7 BB BF
+	  03C3	C3
+  227:	  03C4	C7 CB CF D3	            db  0C7h,0CBh,0CFh,0D3h,0D7h,0DBh,0DEh,0E2h,0E6h,0EAh,0EEh,0F2h,0F6h
+	  03C8	D7 DB DE E2
+	  03CC	E6 EA EE F2
+	  03D0	F6
+  228:	  03D1	FA FE 02 06	            db  0FAh,0FEh,002h,006h,00Ah,00Dh,011h,015h,019h,01Dh,021h,025h,029h
+	  03D5	0A 0D 11 15
+	  03D9	19 1D 21 25
+	  03DD	29
+  229:	  03DE	2D 31 35 39	            db  02Dh,031h,035h,039h,03Dh,040h,044h,048h,04Ch,050h,054h,058h,05Ch
+	  03E2	3D 40 44 48
+	  03E6	4C 50 54 58
+	  03EA	5C
+  230:	  03EB	60 64 68 6C	            db  060h,064h,068h,06Ch,070h,073h,077h,07Bh,07Fh,083h,087h,08Bh,08Fh
+	  03EF	70 73 77 7B
+	  03F3	7F 83 87 8B
+	  03F7	8F
+  231:	  03F8	93 97 9B 9F	            db  093h,097h,09Bh,09Fh,0A3h,0A6h,0AAh,0AEh,0B2h,0B6h,0BAh,0BEh,0C2h
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 9
+
+
+
+ Line  I  Addr  Code            Source
+
+	  03FC	A3 A6 AA AE
+	  0400	B2 B6 BA BE
+	  0404	C2
+  232:	  0405	C6 CA CE D2	            db  0C6h,0CAh,0CEh,0D2h,0D5h,0D9h,0DDh,0E1h,0E5h,0E9h,0EDh,0F1h,0F5h
+	  0409	D5 D9 DD E1
+	  040D	E5 E9 ED F1
+	  0411	F5
+  233:	  0412	F9 FD 01 05	            db  0F9h,0FDh,001h,005h,008h,00Ch,010h,014h,018h,01Ch,020h,024h,028h
+	  0416	08 0C 10 14
+	  041A	18 1C 20 24
+	  041E	28
+  234:	  041F	2C 30 34 38	            db  02Ch,030h,034h,038h,03Bh,03Fh,043h,047h,04Bh,04Fh,053h,057h,05Bh
+	  0423	3B 3F 43 47
+	  0427	4B 4F 53 57
+	  042B	5B
+  235:	  042C	5F 63 67 6B	            db  05Fh,063h,067h,06Bh,06Eh,072h,076h,07Ah,07Eh,082h,086h,08Ah,08Eh
+	  0430	6E 72 76 7A
+	  0434	7E 82 86 8A
+	  0438	8E
+  236:	  0439	92 96 9A 9D	            db  092h,096h,09Ah,09Dh,0A1h,0A5h,0A9h,0ADh,0B1h,0B5h,0B9h,0BDh,0C1h
+	  043D	A1 A5 A9 AD
+	  0441	B1 B5 B9 BD
+	  0445	C1
+  237:	  0446	C5 C9 CD D0	            db  0C5h,0C9h,0CDh,0D0h,0D4h,0D8h,0DCh,0E0h,0E4h,0E8h,0ECh,0F0h,0F4h
+	  044A	D4 D8 DC E0
+	  044E	E4 E8 EC F0
+	  0452	F4
+  238:	  0453	F8 FC 00 03	            db  0F8h,0FCh,000h,003h,007h,00Bh,00Fh,013h,017h,01Bh,01Fh,023h,027h
+	  0457	07 0B 0F 13
+	  045B	17 1B 1F 23
+	  045F	27
+  239:	  0460	2B 2F 33 36	            db  02Bh,02Fh,033h,036h,03Ah,03Eh,042h,046h,04Ah,04Eh,052h,056h,05Ah
+	  0464	3A 3E 42 46
+	  0468	4A 4E 52 56
+	  046C	5A
+  240:	  046D	5E 62 65 69	            db  05Eh,062h,065h,069h,06Dh,071h,075h,079h,07Dh,081h,085h,089h,08Dh
+	  0471	6D 71 75 79
+	  0475	7D 81 85 89
+	  0479	8D
+  241:	  047A	91 95 98 9C	            db  091h,095h,098h,09Ch,0A0h,0A4h,0A8h,0ACh,0B0h
+	  047E	A0 A4 A8 AC
+	  0482	B0
+  242:
+  243:				;******************************************************************************
+  244:				            end
+  245:				;******************************************************************************
 
 
 
@@ -113,9 +565,14 @@ ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. 
                      no errors
 
 
+
+ASEM-51 V1.3                                        Copyright (c) 2002 by W.W. Heinz                                         PAGE 10
+
+
+
 
 
-ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 3
+ASEM-51 V1.3                                        Copyright (c) 2002 by W.W. Heinz                                         PAGE 11
 
 
 
@@ -144,6 +601,7 @@ EX1				  BIT	      AA
 EXTI0				  CODE	    0003
 EXTI1				  CODE	    0013
 F0				  BIT	      D5
+HIGH_DONE			  CODE	    004C	  69
 IE				  DATA	      A8
 IE0				  BIT	      89
 IE1				  BIT	      8B
@@ -152,6 +610,11 @@ INT1				  BIT	      B3
 IP				  DATA	      B8
 IT0				  BIT	      88
 IT1				  BIT	      8A
+LKHTHB				  CODE	    006F	 131
+LKHTLB				  CODE	    0174	 160
+LKLTHB				  CODE	    0279	 189
+LKLTLB				  CODE	    037E	 217
+LOW_DONE			  CODE	    0044	  62
 OV				  BIT	      D2
 P				  BIT	      D0
 P0				  DATA	      80
@@ -167,23 +630,26 @@ PX0				  BIT	      B8
 PX1				  BIT	      BA
 RB8				  BIT	      9A
 RD				  BIT	      B7
+RELOADHT			  CODE	    0059	 105
+RELOADLT			  CODE	    0064	 118
 REN				  BIT	      9C
 RESET				  CODE	    0000
+
+ASEM-51 V1.3                                        Copyright (c) 2002 by W.W. Heinz                                         PAGE 12
+
+
+
+SYMBOL				  TYPE     VALUE	LINE
+------------------------------------------------------------
 RI				  BIT	      98
 RS0				  BIT	      D3
 RS1				  BIT	      D4
 RXD				  BIT	      B0
 SBUF				  DATA	      99
 SCON				  DATA	      98
+SERVO				  NUMBER    00A0	   7
 SINT				  CODE	    0023
 SM0				  BIT	      9F
-
-ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 4
-
-
-
-SYMBOL				  TYPE     VALUE	LINE
-------------------------------------------------------------
 SM1				  BIT	      9E
 SM2				  BIT	      9D
 SP				  DATA	      81
@@ -195,20 +661,25 @@ TF0				  BIT	      8D
 TF1				  BIT	      8F
 TH0				  DATA	      8C
 TH1				  DATA	      8D
+TH_HIGH				  CODE	    0074	 136
+TH_LOW				  CODE	    0179	 165
 TI				  BIT	      99
 TIMER0				  CODE	    000B
 TIMER1				  CODE	    001B
 TL0				  DATA	      8A
 TL1				  DATA	      8B
+TL_HIGH				  CODE	    027E	 194
+TL_LOW				  CODE	    0383	 222
 TMOD				  DATA	      89
 TR0				  BIT	      8C
 TR1				  BIT	      8E
 TXD				  BIT	      B1
 WR				  BIT	      B6
-_EXT0				  CODE	    0030	  45
-_EXT1				  CODE	    0032	  55
-_MAIN				  CODE	    0030	  36
-_SERIAL				  CODE	    0034	  65
-_TMR0				  CODE	    0031	  50
-_TMR1				  CODE	    0033	  60
-_TMR2				  CODE	    0035	  70
+_EXIT				  CODE	    0052	  75
+_EXT0				  CODE	    0040	  55
+_EXT1				  CODE	    0055	  81
+_MAIN				  CODE	    0030	  37
+_SERIAL				  CODE	    0057	  91
+_TMR0				  CODE	    0041	  60
+_TMR1				  CODE	    0056	  86
+_TMR2				  CODE	    0058	  96

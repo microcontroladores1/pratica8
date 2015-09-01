@@ -3,7 +3,7 @@
 
 function low_time = L( v )
 
-low_time = uint16( round(20000 - H(v)) );
+low_time = round(20000 - H(v));
 
 end
 
